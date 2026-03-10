@@ -7,10 +7,19 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirestoreService _firestoreService = FirestoreService();
 
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+    ],
+  );
+
+  /// Current Firebase user
   User? get currentUser => _auth.currentUser;
 
+  /// Auth state stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  /// Google Sign In
   Future<UserCredential?> signInWithGoogle() async {
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
     if (googleUser == null) return null;
@@ -33,6 +42,7 @@ class AuthService {
     return result;
   }
 
+  /// Sign out
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _auth.signOut();

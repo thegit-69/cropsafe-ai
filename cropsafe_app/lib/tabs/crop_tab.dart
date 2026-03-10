@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../services/firestore_service.dart';
+import '../models/app_models.dart';
 import '../widgets/crop_result_sheet.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -21,6 +23,7 @@ class _CropTabState extends State<CropTab> {
   String? _errorMessage;
 
   final _picker = ImagePicker();
+  final _firestoreService = FirestoreService();
 
   final _crops = [
     {'name': 'Wheat',   'emoji': '🌾'},
@@ -77,14 +80,33 @@ class _CropTabState extends State<CropTab> {
 
       if (!mounted) return;
       setState(() => _isLoading = false);
-
       _showResult(result);
+
+      // Upload image and save to Firestore in the background — never blocks UI
+      final imageToUpload = _selectedImage!;
+      Future(() async {
+        String? imageUrl;
+        try {
+          imageUrl = await _firestoreService.uploadCropImage(imageToUpload);
+        } catch (_) {}
+        _firestoreService.addCropScan(
+          CropScanResult(
+            id: '',
+            fieldId: '',
+            disease: result.disease,
+            confidence: result.confidence,
+            recommendation: result.recommendation,
+            imageUrl: imageUrl,
+            createdAt: DateTime.now(),
+          ),
+        );
+      });
 
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Analysis failed. Make sure the server is running.';
+        _errorMessage = 'Analysis failed. Check your server URL and connection.';
       });
     }
   }

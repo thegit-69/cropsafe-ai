@@ -45,6 +45,7 @@ dependencies:
   image_picker: ^1.1.2
   intl: ^0.20.2
   flutter_svg: ^2.0.17
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:

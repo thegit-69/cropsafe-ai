@@ -3,10 +3,12 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  // Change this to your actual IP or ngrok URL
-  static const String baseUrl = 'http://10.60.223.131:8000';
+  // !! UPDATE THIS to your current ngrok HTTPS URL every session !!
+  // e.g. 'https://abcd-12-34-56-78.ngrok-free.app'
+  static const String baseUrl = 'https://april-brotherlike-nonethically.ngrok-free.dev';
 
   // ── Crop Disease Analysis ──────────────────────────────────
   static Future<CropApiResult> analyzeCrop(File imageFile) async {
@@ -16,12 +18,19 @@ class ApiService {
         Uri.parse('$baseUrl/crop/predict_crop'),
       );
 
+      // Required to bypass ngrok browser warning page
+      request.headers['ngrok-skip-browser-warning'] = 'true';
+
       request.files.add(
-        await http.MultipartFile.fromPath('file', imageFile.path),
+        await http.MultipartFile.fromPath(
+          'file',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
       );
 
       final response = await request.send().timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 15),
       );
 
       if (response.statusCode == 200) {
@@ -47,7 +56,10 @@ class ApiService {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/soil/predict_soil'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
         body: jsonEncode({
           'nitrogen':   nitrogen,
           'phosphorus': phosphorus,
@@ -55,7 +67,7 @@ class ApiService {
           'ph':         ph,
           'moisture':   moisture,
         }),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);

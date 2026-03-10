@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../models/app_models.dart';
 import '../models/data_models.dart';
+import '../services/firestore_service.dart';
 import '../widgets/shared_widgets.dart';
 
 class HistoryTab extends StatefulWidget {
@@ -11,17 +13,93 @@ class HistoryTab extends StatefulWidget {
 
 class _HistoryTabState extends State<HistoryTab> {
   String _activeFilter = 'All';
+  final _firestoreService = FirestoreService();
+
+  List<SoilTestResult> _soilTests = [];
+  List<CropScanResult> _cropScans = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _firestoreService.getSoilTests().listen((data) {
+      if (mounted) setState(() { _soilTests = data; _loading = false; });
+    });
+    _firestoreService.getCropScans().listen((data) {
+      if (mounted) setState(() { _cropScans = data; _loading = false; });
+    });
+  }
+
+  // ── Convert Firestore models to display HistoryItems ──────
+  List<HistoryItem> get _allItems {
+    final items = <HistoryItem>[];
+
+    var id = 1;
+    for (final s in _soilTests) {
+      final severity = s.score >= 70 ? 'low' : (s.score >= 50 ? 'medium' : 'high');
+      items.add(HistoryItem(
+        id: id++,
+        type: 'soil',
+        title: 'Soil Test',
+        date: _formatDate(s.createdAt),
+        time: _formatTime(s.createdAt),
+        status: s.label,
+        severity: severity,
+        score: s.score,
+      ));
+    }
+
+    for (final c in _cropScans) {
+      final score = _cropScore(c.disease);
+      final severity = score >= 80 ? 'low' : (score >= 50 ? 'medium' : 'high');
+      items.add(HistoryItem(
+        id: id++,
+        type: 'crop',
+        title: 'Crop Scan',
+        date: _formatDate(c.createdAt),
+        time: _formatTime(c.createdAt),
+        status: c.disease == 'Healthy' ? 'Healthy Crop' : '${c.disease} Detected',
+        severity: severity,
+        score: score,
+      ));
+    }
+
+    // Sort newest first
+    items.sort((a, b) => b.id.compareTo(a.id));
+    return items;
+  }
+
+  int _cropScore(String disease) {
+    switch (disease) {
+      case 'Healthy':        return 95;
+      case 'Powdery Mildew': return 60;
+      case 'Leaf Spot':      return 50;
+      case 'Rust':           return 40;
+      case 'Blight':         return 25;
+      default:               return 50;
+    }
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  String _formatTime(DateTime dt) {
+    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final m = dt.minute.toString().padLeft(2, '0');
+    final ampm = dt.hour < 12 ? 'AM' : 'PM';
+    return '$h:$m $ampm';
+  }
 
   List<HistoryItem> get _filtered {
+    final all = _allItems;
     switch (_activeFilter) {
-      case 'Soil Tests':
-        return historyItems.where((i) => i.type == 'soil').toList();
-      case 'Crop Scans':
-        return historyItems.where((i) => i.type == 'crop').toList();
-      case 'Critical':
-        return historyItems.where((i) => i.severity == 'high').toList();
-      default:
-        return historyItems;
+      case 'Soil Tests': return all.where((i) => i.type == 'soil').toList();
+      case 'Crop Scans': return all.where((i) => i.type == 'crop').toList();
+      case 'Critical':   return all.where((i) => i.severity == 'high').toList();
+      default:           return all;
     }
   }
 
@@ -110,61 +188,69 @@ class _HistoryTabState extends State<HistoryTab> {
 
         // Body
         Expanded(
-          child: SingleChildScrollView(
+          child: _loading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF15803D)),
+                )
+              : SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Summary stats
+                // Summary stats (real counts)
                 Row(
                   children: [
                     Expanded(
                         child: _StatBox(
-                            value: '20',
+                            value: _allItems.length.toString(),
                             label: 'Total',
                             color: const Color(0xFF1F2937))),
                     const SizedBox(width: 10),
                     Expanded(
                         child: _StatBox(
-                            value: '5',
+                            value: _allItems
+                                .where((i) => i.severity == 'high')
+                                .length
+                                .toString(),
                             label: 'Critical',
                             color: const Color(0xFFDC2626))),
                     const SizedBox(width: 10),
                     Expanded(
                         child: _StatBox(
-                            value: '6',
-                            label: 'Resolved',
+                            value: _allItems
+                                .where((i) => i.severity == 'low')
+                                .length
+                                .toString(),
+                            label: 'Healthy',
                             color: const Color(0xFF15803D))),
                   ],
                 ),
                 const SizedBox(height: 14),
+
+                // Empty state
+                if (_filtered.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.history, size: 48, color: Color(0xFFD1D5DB)),
+                        const SizedBox(height: 12),
+                        Text(
+                          _activeFilter == 'All'
+                              ? 'No analysis yet.\nRun a Soil Test or Crop Scan to see results here.'
+                              : 'No ${_activeFilter.toLowerCase()} found.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 13, color: Color(0xFF9CA3AF)),
+                        ),
+                      ],
+                    ),
+                  ),
 
                 // History cards
                 ..._filtered.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
                       child: _HistoryCard(item: item),
                     )),
-
-                // Load more
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE5E7EB)),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'Load More History',
-                        style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B7280)),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),

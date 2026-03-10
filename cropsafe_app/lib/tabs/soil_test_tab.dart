@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/firestore_service.dart';
+import '../models/app_models.dart';
 import '../widgets/soil_result_sheet.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -16,6 +18,8 @@ class _SoilTestTabState extends State<SoilTestTab> {
   bool _isLoading = false;
   String? _errorMessage;
   String? _selectedField;
+
+  final _firestoreService = FirestoreService();
 
   final _phCtrl         = TextEditingController();
   final _nitrogenCtrl   = TextEditingController();
@@ -81,14 +85,39 @@ class _SoilTestTabState extends State<SoilTestTab> {
       );
 
       if (!mounted) return;
+
+      // Show result immediately — Firebase save runs in background
       setState(() => _isLoading = false);
       _showResult(result);
+
+      Future(() {
+        _firestoreService.addSoilTest(SoilTestResult(
+          id: '',
+          fieldId: _selectedField ?? '',
+          score: result.score,
+          label: result.label,
+          breakdown: {
+            for (final b in result.breakdown)
+              b.parameter: {
+                'value': b.value,
+                'unit': b.unit,
+                'status': b.status,
+                'ideal': b.ideal,
+                'score': b.score,
+              }
+          },
+          recommendations: result.recommendations
+              .map((r) => {'title': r.title, 'detail': r.detail})
+              .toList(),
+          createdAt: DateTime.now(),
+        ));
+      });
 
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading    = false;
-        _errorMessage = 'Analysis failed. Make sure the server is running.';
+        _errorMessage = 'Analysis failed. Check your server URL and connection.';
       });
     }
   }

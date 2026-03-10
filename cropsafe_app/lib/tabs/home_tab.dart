@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../screens/login_screen.dart';
 import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
+import '../services/weather_service.dart';
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   final VoidCallback onGoToSoil;
   final VoidCallback onGoToCrop;
 
@@ -11,6 +14,56 @@ class HomeTab extends StatelessWidget {
     required this.onGoToSoil,
     required this.onGoToCrop,
   });
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  final _firestoreService = FirestoreService();
+  final _weatherService   = WeatherService();
+  int _soilTests = 0;
+  int _cropScans = 0;
+  int _issuesFound = 0;
+
+  WeatherData? _weather;
+  bool _weatherLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    try {
+      final data = await _weatherService.fetchWeather();
+      if (mounted) setState(() { _weather = data; _weatherLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _weather = WeatherData.fallback; _weatherLoading = false; });
+    }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await _firestoreService.getStats();
+      if (mounted) {
+        setState(() {
+          _soilTests   = stats['soilTests'] ?? 0;
+          _cropScans   = stats['cropScans'] ?? 0;
+          _issuesFound = stats['issuesFound'] ?? 0;
+        });
+      }
+    } catch (_) {}
+  }
+
+  String get _userName {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user?.displayName == null || user!.displayName!.isEmpty) return 'Farmer';
+    final parts = user.displayName!.trim().split(' ');
+    return parts.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,19 +79,19 @@ class HomeTab extends StatelessWidget {
                 // Top row
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Good Morning,',
                             style: TextStyle(
                                 color: Color(0xFFBBF7D0), fontSize: 12),
                           ),
-                          SizedBox(height: 2),
+                          const SizedBox(height: 2),
                           Text(
-                            'Team KALKI 👋',
-                            style: TextStyle(
+                            '$_userName 👋',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -111,40 +164,51 @@ class HomeTab extends StatelessWidget {
                     color: Colors.white.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
-                    children: [
-                      const Text('☀️', style: TextStyle(fontSize: 28)),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  child: _weatherLoading
+                      ? const Center(
+                          child: SizedBox(
+                            height: 36,
+                            child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                          ),
+                        )
+                      : Row(
                           children: [
                             Text(
-                              '34°C · Chennai',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700),
+                              _weather?.emoji ?? '🌡️',
+                              style: const TextStyle(fontSize: 28),
                             ),
-                            Text(
-                              'Clear · Good for field work',
-                              style: TextStyle(
-                                  color: Color(0xFFBBF7D0), fontSize: 11),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_weather?.temperature.round() ?? '--'}°C · ${_weather?.city ?? '...'}',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    '${_weather?.condition ?? ''} · ${_weather?.isGoodForFieldWork == true ? 'Good for field work' : 'Not ideal for field work'}',
+                                    style: const TextStyle(
+                                        color: Color(0xFFBBF7D0), fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                _weatherStat('💧', '${_weather?.humidity ?? '--'}%'),
+                                const SizedBox(width: 12),
+                                _weatherStat('🌬️', '${_weather?.windSpeed.round() ?? '--'}km/h'),
+                                const SizedBox(width: 12),
+                                _weatherStat('🌡️', '${_weather?.temperature.round() ?? '--'}°'),
+                              ],
                             ),
                           ],
                         ),
-                      ),
-                      Row(
-                        children: [
-                          _weatherStat('💧', '62%'),
-                          const SizedBox(width: 12),
-                          _weatherStat('🌬️', '12km/h'),
-                          const SizedBox(width: 12),
-                          _weatherStat('🌡️', '37°'),
-                        ],
-                      ),
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -169,7 +233,7 @@ class HomeTab extends StatelessWidget {
                           subtitle: 'Analyze nutrients & pH',
                           actionText: 'Start Test',
                           actionColor: const Color(0xFFD97706),
-                          onTap: onGoToSoil,
+                          onTap: widget.onGoToSoil,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -182,7 +246,7 @@ class HomeTab extends StatelessWidget {
                           subtitle: 'Detect pest & disease',
                           actionText: 'Scan Now',
                           actionColor: const Color(0xFF15803D),
-                          onTap: onGoToCrop,
+                          onTap: widget.onGoToCrop,
                         ),
                       ),
                     ],
@@ -299,22 +363,22 @@ class HomeTab extends StatelessWidget {
                       Expanded(
                           child: _StatCard(
                               emoji: '🧪',
-                              value: '12',
+                              value: _soilTests.toString(),
                               label: 'Soil Tests',
                               bg: const Color(0xFFFFFBEB))),
                       const SizedBox(width: 10),
                       Expanded(
                           child: _StatCard(
                               emoji: '🌿',
-                              value: '8',
+                              value: _cropScans.toString(),
                               label: 'Crop Scans',
                               bg: const Color(0xFFF0FDF4))),
                       const SizedBox(width: 10),
                       Expanded(
                           child: _StatCard(
-                              emoji: '✅',
-                              value: '6',
-                              label: 'Issues Fixed',
+                              emoji: '⚠️',
+                              value: _issuesFound.toString(),
+                              label: 'Issues Found',
                               bg: const Color(0xFFEFF6FF))),
                     ],
                   ),

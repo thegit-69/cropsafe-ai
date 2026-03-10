@@ -29,14 +29,28 @@ async def predict_crop(file: UploadFile = File(...)):
     """
 
     # ── Step 1: Validate file type ─────────────────────────────
-    ALLOWED_TYPES = ["image/jpeg", "image/png", "image/jpg", "image/webp"]
+    ALLOWED_TYPES = [
+        "image/jpeg", "image/png", "image/jpg",
+        "image/webp", "application/octet-stream"
+    ]
 
+    # Check by file extension if content type is octet-stream
     if file.content_type not in ALLOWED_TYPES:
         logger.warning(f"Invalid file type received: {file.content_type}")
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file type: {file.content_type}. Only JPEG and PNG allowed."
         )
+
+    # If octet-stream check file extension
+    if file.content_type == "application/octet-stream":
+        ext = file.filename.lower().split(".")[-1] if file.filename else ""
+        if ext not in ["jpg", "jpeg", "png", "webp"]:
+            logger.warning(f"Invalid file extension: {ext}")
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file type. Only JPEG and PNG allowed."
+            )
 
     # ── Step 2: Read image bytes ───────────────────────────────
     try:

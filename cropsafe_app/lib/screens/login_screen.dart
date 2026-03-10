@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'dashboard_screen.dart';
 import '../services/auth_service.dart';
 
@@ -95,7 +96,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF8BC34A).withValues(alpha: 0.25),
+                          color: const Color(
+                            0xFF8BC34A,
+                          ).withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
@@ -120,7 +123,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: const Color(0xFF8BC34A).withValues(alpha: 0.85),
+                          color: const Color(
+                            0xFF8BC34A,
+                          ).withValues(alpha: 0.85),
                           letterSpacing: 3.0,
                         ),
                       ),
@@ -164,112 +169,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 48),
 
-                          // Primary sign-in button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed:
-                                  _isLoading ? null : _handleGoogleSignIn,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF14753D),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      height: 24,
-                                      width: 24,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    )
-                                  : const Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(Icons.login_rounded, size: 22),
-                                        SizedBox(width: 12),
-                                        Text(
-                                          'Sign In with Google',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                          // Google Sign-In button (SVG asset)
+                          GestureDetector(
+                            onTap: _isLoading ? null : _handleGoogleSignIn,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 56,
+                                    child: Center(
+                                      child: SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Color(0xFF14753D),
+                                          strokeWidth: 2.5,
                                         ),
-                                        SizedBox(width: 8),
-                                        Icon(Icons.arrow_forward_rounded,
-                                            size: 20),
-                                      ],
+                                      ),
                                     ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Divider
-                          Row(
-                            children: [
-                              Expanded(
-                                  child: Divider(
-                                      color: Colors.grey.shade300,
-                                      thickness: 1)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16),
-                                child: Text(
-                                  'or sign in with',
-                                  style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 13),
-                                ),
-                              ),
-                              Expanded(
-                                  child: Divider(
-                                      color: Colors.grey.shade300,
-                                      thickness: 1)),
-                            ],
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Outlined Google button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: OutlinedButton.icon(
-                              onPressed:
-                                  _isLoading ? null : _handleGoogleSignIn,
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                    color: Colors.grey.shade300),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              icon: Image.network(
-                                'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                                height: 24,
-                                width: 24,
-                                errorBuilder: (_, __, ___) => const Icon(
-                                  Icons.g_mobiledata_rounded,
-                                  size: 28,
-                                  color: Colors.red,
-                                ),
-                              ),
-                              label: const Text(
-                                'Google',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF1A1A1A),
-                                ),
-                              ),
-                            ),
+                                  )
+                                : SvgPicture.asset(
+                                    'assets/images/android_light_rd_SU.svg',
+                                    height: 56,
+                                  ),
                           ),
 
                           const Spacer(),
@@ -280,8 +200,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               'By signing in, you agree to our Terms & Privacy Policy',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade500),
+                                fontSize: 12,
+                                color: Colors.grey.shade500,
+                              ),
                             ),
                           ),
                         ],

@@ -1,9 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirestoreService _firestoreService = FirestoreService();
 
   User? get currentUser => _auth.currentUser;
 
@@ -21,7 +23,14 @@ class AuthService {
       idToken: googleAuth.idToken,
     );
 
-    return await _auth.signInWithCredential(credential);
+    final result = await _auth.signInWithCredential(credential);
+
+    // Create user profile in Firestore on first sign-in
+    if (result.user != null) {
+      await _firestoreService.createUserProfile(result.user!);
+    }
+
+    return result;
   }
 
   Future<void> signOut() async {

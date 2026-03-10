@@ -15,7 +15,7 @@ env/
 *.env
 
 # Trained Model Files (too large for git)
-trained_models
+trained_models/crop_model
 trained_models/*.pth
 trained_models/*.pkl
 

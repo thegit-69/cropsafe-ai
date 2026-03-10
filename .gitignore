@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Anaconda / Virtual Environments
+venv/
+env/
+.env
+*.env
+
+# Trained Model Files (too large for git)
+trained_models/*.pth
+trained_models/*.pkl
+
+# Datasets (too large for git)
+datasets/
+
+# Jupyter Notebooks checkpoints
+.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+```
+
+---
+
+## Important Notes
+
+| Ignored | Reason |
+|---------|--------|
+| `trained_models/*.pth` | Crop model is ~10MB, too large for git |
+| `trained_models/*.pkl` | Soil model files |
+| `datasets/` | Images are hundreds of MB |
+| `__pycache__/` | Auto-generated Python cache |
+| `.vscode/` | Editor specific settings |
+
+---
+
+## Keep These in Git
+
+Make sure these are NOT ignored — they are essential for anyone cloning the repo:
+```
+app/
+train_crop_model.py
+train_soil_model.py
+requirements.txt
+CROPSAFE_AI_PROJECT_CONTEXT.md

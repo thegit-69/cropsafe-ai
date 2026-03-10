@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'firestore_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirestoreService _firestoreService = FirestoreService();
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
@@ -18,30 +21,25 @@ class AuthService {
 
   /// Google Sign In
   Future<UserCredential?> signInWithGoogle() async {
-    try {
-      // Open Google account selector
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return null;
 
-      // User cancelled login
-      if (googleUser == null) {
-        return null;
-      }
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
-      // Get authentication tokens
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth.accessToken,
+      idToken: googleAuth.idToken,
+    );
 
-      // Create Firebase credential
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+    final result = await _auth.signInWithCredential(credential);
 
-      // Sign in to Firebase
-      return await _auth.signInWithCredential(credential);
-    } catch (e) {
-      throw Exception("Google Sign-In failed: $e");
+    // Create user profile in Firestore on first sign-in
+    if (result.user != null) {
+      await _firestoreService.createUserProfile(result.user!);
     }
+
+    return result;
   }
 
   /// Sign out

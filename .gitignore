@@ -29,7 +29,7 @@ datasets/
 .vscode/
 
 # PyCharm
-.idea/
+.idea/*
 
 # OS Files
 .DS_Store

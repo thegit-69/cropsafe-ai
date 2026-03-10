@@ -1,4 +1,7 @@
+// lib/tabs/soil_test_tab.dart
+
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import '../widgets/soil_result_sheet.dart';
 import '../widgets/shared_widgets.dart';
 
@@ -11,26 +14,93 @@ class SoilTestTab extends StatefulWidget {
 
 class _SoilTestTabState extends State<SoilTestTab> {
   bool _isLoading = false;
-  final _phCtrl = TextEditingController();
-  final _nitrogenCtrl = TextEditingController();
-  final _phosphorusCtrl = TextEditingController();
-  final _potassiumCtrl = TextEditingController();
-  final _moistureCtrl = TextEditingController();
+  String? _errorMessage;
+  String? _selectedField;
 
-  Future<void> _analyze() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    _showResult();
+  final _phCtrl         = TextEditingController();
+  final _nitrogenCtrl   = TextEditingController();
+  final _phosphorusCtrl = TextEditingController();
+  final _potassiumCtrl  = TextEditingController();
+  final _moistureCtrl   = TextEditingController();
+
+  @override
+  void dispose() {
+    _phCtrl.dispose();
+    _nitrogenCtrl.dispose();
+    _phosphorusCtrl.dispose();
+    _potassiumCtrl.dispose();
+    _moistureCtrl.dispose();
+    super.dispose();
   }
 
-  void _showResult() {
+  // ── Validate, parse, call API ──────────────────────────────
+  Future<void> _analyze() async {
+    // Validate all fields filled
+    final fields = {
+      'pH Level':   _phCtrl.text.trim(),
+      'Nitrogen':   _nitrogenCtrl.text.trim(),
+      'Phosphorus': _phosphorusCtrl.text.trim(),
+      'Potassium':  _potassiumCtrl.text.trim(),
+      'Moisture':   _moistureCtrl.text.trim(),
+    };
+
+    for (final entry in fields.entries) {
+      if (entry.value.isEmpty) {
+        setState(() =>
+            _errorMessage = '${entry.key} is required. Please fill all fields.');
+        return;
+      }
+    }
+
+    // Parse to numbers
+    final ph         = double.tryParse(_phCtrl.text.trim());
+    final nitrogen   = double.tryParse(_nitrogenCtrl.text.trim());
+    final phosphorus = double.tryParse(_phosphorusCtrl.text.trim());
+    final potassium  = double.tryParse(_potassiumCtrl.text.trim());
+    final moisture   = double.tryParse(_moistureCtrl.text.trim());
+
+    if (ph == null || nitrogen == null || phosphorus == null ||
+        potassium == null || moisture == null) {
+      setState(() => _errorMessage = 'Please enter valid numbers only.');
+      return;
+    }
+
+    setState(() {
+      _isLoading    = true;
+      _errorMessage = null;
+    });
+
+    // Call FastAPI
+    try {
+      final result = await ApiService.analyzeSoil(
+        nitrogen:   nitrogen,
+        phosphorus: phosphorus,
+        potassium:  potassium,
+        ph:         ph,
+        moisture:   moisture,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showResult(result);
+
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading    = false;
+        _errorMessage = 'Analysis failed. Make sure the server is running.';
+      });
+    }
+  }
+
+  // ── Show result sheet ──────────────────────────────────────
+  void _showResult(SoilApiResult result) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => SoilResultSheet(
+        result: result,
         onClose: () => Navigator.pop(context),
       ),
     );
@@ -40,7 +110,8 @@ class _SoilTestTabState extends State<SoilTestTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
+
+        // ── Header ─────────────────────────────────────────
         Container(
           color: const Color(0xFFD97706),
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -65,7 +136,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
                           color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w700)),
-                  Text('AI Nutrient & Deficiency Analysis',
+                  Text('AI Nutrient and Deficiency Analysis',
                       style: TextStyle(
                           color: Color(0xFFFDE68A), fontSize: 11)),
                 ],
@@ -74,14 +145,15 @@ class _SoilTestTabState extends State<SoilTestTab> {
           ),
         ),
 
-        // Scrollable body
+        // ── Body ───────────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Photo upload card
+
+                // ── Photo Upload Card ──────────────────────
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -99,12 +171,12 @@ class _SoilTestTabState extends State<SoilTestTab> {
                       const SizedBox(height: 12),
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 28),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 28),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFFBEB),
                           border: Border.all(
                               color: const Color(0xFFFDE68A),
-                              style: BorderStyle.solid,
                               width: 1.5),
                           borderRadius: BorderRadius.circular(16),
                         ),
@@ -115,9 +187,12 @@ class _SoilTestTabState extends State<SoilTestTab> {
                               height: 52,
                               decoration: BoxDecoration(
                                   color: const Color(0xFFFEF3C7),
-                                  borderRadius: BorderRadius.circular(16)),
-                              child: const Icon(Icons.camera_alt_outlined,
-                                  color: Color(0xFFD97706), size: 26),
+                                  borderRadius:
+                                      BorderRadius.circular(16)),
+                              child: const Icon(
+                                  Icons.camera_alt_outlined,
+                                  color: Color(0xFFD97706),
+                                  size: 26),
                             ),
                             const SizedBox(height: 8),
                             const Text('Tap to upload or take photo',
@@ -128,10 +203,12 @@ class _SoilTestTabState extends State<SoilTestTab> {
                             const SizedBox(height: 4),
                             const Text('JPG, PNG or PDF supported',
                                 style: TextStyle(
-                                    color: Color(0xFFD97706), fontSize: 11)),
+                                    color: Color(0xFFD97706),
+                                    fontSize: 11)),
                             const SizedBox(height: 12),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
                               children: [
                                 _UploadButton(
                                     icon: Icons.camera_alt_outlined,
@@ -152,9 +229,9 @@ class _SoilTestTabState extends State<SoilTestTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Divider
-                Row(
-                  children: const [
+                // ── Divider ────────────────────────────────
+                const Row(
+                  children: [
                     Expanded(child: Divider()),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 12),
@@ -167,7 +244,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Manual input
+                // ── Manual Input ───────────────────────────
                 _SectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -229,31 +306,30 @@ class _SoilTestTabState extends State<SoilTestTab> {
                             horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF9FAFB),
-                          border:
-                              Border.all(color: const Color(0xFFE5E7EB)),
+                          border: Border.all(
+                              color: const Color(0xFFE5E7EB)),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: DropdownButton<String>(
                           isExpanded: true,
                           underline: const SizedBox(),
+                          value: _selectedField,
                           hint: const Text('Choose field...',
                               style: TextStyle(
-                                  fontSize: 13, color: Color(0xFF9CA3AF))),
+                                  fontSize: 13,
+                                  color: Color(0xFF9CA3AF))),
                           items: const [
                             DropdownMenuItem(
                                 value: 'a',
-                                child:
-                                    Text('Field A — Wheat (5 acres)')),
+                                child: Text('Field A — Wheat (5 acres)')),
                             DropdownMenuItem(
                                 value: 'b',
-                                child:
-                                    Text('Field B — Rice (3.5 acres)')),
+                                child: Text('Field B — Rice (3.5 acres)')),
                             DropdownMenuItem(
                                 value: 'c',
-                                child: Text(
-                                    'Field C — Cotton (7 acres)')),
+                                child: Text('Field C — Cotton (7 acres)')),
                           ],
-                          onChanged: (_) {},
+                          onChanged: (v) => setState(() => _selectedField = v),
                         ),
                       ),
                     ],
@@ -261,10 +337,38 @@ class _SoilTestTabState extends State<SoilTestTab> {
                 ),
                 const SizedBox(height: 16),
 
-                // Analyze button / loading
+                // ── Error Message ──────────────────────────
+                if (_errorMessage != null)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEE2E2),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: const Color(0xFFFCA5A5)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline,
+                            color: Color(0xFFDC2626), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                                color: Color(0xFFDC2626), fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // ── Analyze Button ─────────────────────────
                 _isLoading
-                    ? LoadingCard(
-                        bgColor: const Color(0xFFD97706),
+                    ? const LoadingCard(
+                        bgColor: Color(0xFFD97706),
                         title: 'AI is analyzing your soil data...',
                         subtitle: 'Detecting nutrient deficiencies',
                       )
@@ -278,30 +382,32 @@ class _SoilTestTabState extends State<SoilTestTab> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD97706),
                             foregroundColor: Colors.white,
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16),
                             textStyle: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
+                                borderRadius:
+                                    BorderRadius.circular(16)),
                             elevation: 2,
                           ),
                         ),
                       ),
                 const SizedBox(height: 16),
 
-                // Info banner
+                // ── Info Banner ────────────────────────────
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFEFF6FF),
-                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                    border:
+                        Border.all(color: const Color(0xFFBFDBFE)),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
+                  child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Icon(Icons.info_outline,
                           color: Color(0xFF3B82F6), size: 16),
                       SizedBox(width: 8),
@@ -317,6 +423,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -326,6 +433,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
   }
 }
 
+// ── Section Card ───────────────────────────────────────────────
 class _SectionCard extends StatelessWidget {
   final Widget child;
   const _SectionCard({required this.child});
@@ -350,6 +458,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+// ── Upload Button ──────────────────────────────────────────────
 class _UploadButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -368,12 +477,12 @@ class _UploadButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFD97706),
           foregroundColor: Colors.white,
-          textStyle:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 10),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
       );
@@ -385,17 +494,18 @@ class _UploadButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: const Color(0xFFD97706),
         side: const BorderSide(color: Color(0xFFFDE68A)),
-        textStyle:
-            const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 }
 
+// ── Input Field ────────────────────────────────────────────────
 class _InputField extends StatelessWidget {
   final String label;
   final String hint;
@@ -422,31 +532,35 @@ class _InputField extends StatelessWidget {
         const SizedBox(height: 4),
         TextFormField(
           controller: ctrl,
-          keyboardType: TextInputType.number,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             hintText: hint,
             suffixText: unit.isNotEmpty ? unit : null,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 12),
             filled: true,
             fillColor: const Color(0xFFF9FAFB),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE5E7EB)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+              borderSide:
+                  const BorderSide(color: Color(0xFFE5E7EB)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFFD97706), width: 2),
+              borderSide: const BorderSide(
+                  color: Color(0xFFD97706), width: 2),
             ),
             hintStyle: const TextStyle(
                 fontSize: 13, color: Color(0xFF9CA3AF)),
           ),
-          style: const TextStyle(fontSize: 13, color: Color(0xFF1F2937)),
+          style: const TextStyle(
+              fontSize: 13, color: Color(0xFF1F2937)),
         ),
       ],
     );

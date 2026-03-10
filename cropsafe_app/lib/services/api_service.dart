@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // Change this to your actual IP or ngrok URL
-  static const String baseUrl = 'http://192.168.x.x:8000';
+  static const String baseUrl = 'http://10.60.223.131:8000';
 
   // ── Crop Disease Analysis ──────────────────────────────────
   static Future<CropApiResult> analyzeCrop(File imageFile) async {

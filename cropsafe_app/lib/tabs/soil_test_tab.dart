@@ -15,6 +15,7 @@ class SoilTestTab extends StatefulWidget {
 class _SoilTestTabState extends State<SoilTestTab> {
   bool _isLoading = false;
   String? _errorMessage;
+  String? _selectedField;
 
   final _phCtrl         = TextEditingController();
   final _nitrogenCtrl   = TextEditingController();
@@ -312,6 +313,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
                         child: DropdownButton<String>(
                           isExpanded: true,
                           underline: const SizedBox(),
+                          value: _selectedField,
                           hint: const Text('Choose field...',
                               style: TextStyle(
                                   fontSize: 13,
@@ -327,7 +329,7 @@ class _SoilTestTabState extends State<SoilTestTab> {
                                 value: 'c',
                                 child: Text('Field C — Cotton (7 acres)')),
                           ],
-                          onChanged: (_) {},
+                          onChanged: (v) => setState(() => _selectedField = v),
                         ),
                       ),
                     ],

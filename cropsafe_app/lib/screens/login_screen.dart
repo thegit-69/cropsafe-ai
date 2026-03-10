@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dashboard_screen.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart' show DashboardPage;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _authService.signInWithGoogle();
       if (result != null && mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardPage()),
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
         );
       }
     } catch (e) {
@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
 
-          // Background pattern overlay
+          // Background overlay
           Positioned(
             top: 0,
             left: 0,
@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Top section - Logo and branding
+                // ── Top branding section ──────────────────────────────
                 SizedBox(
                   height: size.height * 0.38,
                   child: Column(
@@ -95,9 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF8BC34A,
-                          ).withValues(alpha: 0.25),
+                          color: const Color(0xFF8BC34A).withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
@@ -107,7 +105,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // App name
                       const Text(
                         'CropSafe AI',
                         style: TextStyle(
@@ -123,9 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: const Color(
-                            0xFF8BC34A,
-                          ).withValues(alpha: 0.85),
+                          color: const Color(0xFF8BC34A).withValues(alpha: 0.85),
                           letterSpacing: 3.0,
                         ),
                       ),
@@ -133,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                // Bottom section - White card
+                // ── White bottom card ─────────────────────────────────
                 Expanded(
                   child: Container(
                     width: size.width,
@@ -150,7 +145,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           const SizedBox(height: 48),
 
-                          // Welcome text
                           const Text(
                             'Welcome Back',
                             style: TextStyle(
@@ -170,14 +164,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 48),
 
-                          // Google Sign-In button
+                          // Primary sign-in button
                           SizedBox(
                             width: double.infinity,
                             height: 56,
                             child: ElevatedButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : _handleGoogleSignIn,
+                              onPressed:
+                                  _isLoading ? null : _handleGoogleSignIn,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF14753D),
                                 foregroundColor: Colors.white,
@@ -209,10 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                         SizedBox(width: 8),
-                                        Icon(
-                                          Icons.arrow_forward_rounded,
-                                          size: 20,
-                                        ),
+                                        Icon(Icons.arrow_forward_rounded,
+                                            size: 20),
                                       ],
                                     ),
                             ),
@@ -220,48 +211,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const SizedBox(height: 20),
 
-                          // Divider with text
+                          // Divider
                           Row(
                             children: [
                               Expanded(
-                                child: Divider(
-                                  color: Colors.grey.shade300,
-                                  thickness: 1,
-                                ),
-                              ),
+                                  child: Divider(
+                                      color: Colors.grey.shade300,
+                                      thickness: 1)),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
+                                    horizontal: 16),
                                 child: Text(
                                   'or sign in with',
                                   style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 13,
-                                  ),
+                                      color: Colors.grey.shade500,
+                                      fontSize: 13),
                                 ),
                               ),
                               Expanded(
-                                child: Divider(
-                                  color: Colors.grey.shade300,
-                                  thickness: 1,
-                                ),
-                              ),
+                                  child: Divider(
+                                      color: Colors.grey.shade300,
+                                      thickness: 1)),
                             ],
                           ),
 
                           const SizedBox(height: 20),
 
-                          // Google button (outlined)
+                          // Outlined Google button
                           SizedBox(
                             width: double.infinity,
                             height: 56,
                             child: OutlinedButton.icon(
-                              onPressed: _isLoading
-                                  ? null
-                                  : _handleGoogleSignIn,
+                              onPressed:
+                                  _isLoading ? null : _handleGoogleSignIn,
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: Colors.grey.shade300),
+                                side: BorderSide(
+                                    color: Colors.grey.shade300),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -270,7 +255,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
                                 height: 24,
                                 width: 24,
-                                // ignore: unnecessary_underscores
                                 errorBuilder: (_, __, ___) => const Icon(
                                   Icons.g_mobiledata_rounded,
                                   size: 28,
@@ -290,16 +274,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           const Spacer(),
 
-                          // Footer
                           Padding(
                             padding: const EdgeInsets.only(bottom: 24),
                             child: Text(
                               'By signing in, you agree to our Terms & Privacy Policy',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade500,
-                              ),
+                                  fontSize: 12,
+                                  color: Colors.grey.shade500),
                             ),
                           ),
                         ],

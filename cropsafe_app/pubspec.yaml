@@ -47,6 +47,11 @@ dependencies:
 
   # Image picker
   image_picker: ^1.1.2
+  firebase_storage: ^12.4.4
+  image_picker: ^1.1.2
+  http: ^1.2.2
+  intl: ^0.20.2
+  flutter_svg: ^2.0.17
 
 dev_dependencies:
   flutter_test:

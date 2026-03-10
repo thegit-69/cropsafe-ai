@@ -30,7 +30,7 @@ class SoilInput(BaseModel):
         return v
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "nitrogen":   42,
                 "phosphorus": 68,

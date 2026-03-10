@@ -7,12 +7,6 @@ class AuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirestoreService _firestoreService = FirestoreService();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-    ],
-  );
-
   /// Current Firebase user
   User? get currentUser => _auth.currentUser;
 
@@ -21,22 +15,28 @@ class AuthService {
 
   /// Google Sign In
   Future<UserCredential?> signInWithGoogle() async {
+    // Open Google account selector
     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+    // User cancelled login
     if (googleUser == null) return null;
 
+    // Get authentication tokens
     final GoogleSignInAuthentication googleAuth =
         await googleUser.authentication;
 
+    // Create Firebase credential
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
       idToken: googleAuth.idToken,
     );
 
+    // Sign in to Firebase
     final result = await _auth.signInWithCredential(credential);
 
     // Create user profile in Firestore on first sign-in
     if (result.user != null) {
-      await _firestoreService.createUserProfile(result.user!);
+      _firestoreService.createUserProfile(result.user!);
     }
 
     return result;

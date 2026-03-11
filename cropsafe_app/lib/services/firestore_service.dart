@@ -90,6 +90,15 @@ class FirestoreService {
         .add(result.toMap());
   }
 
+  Future<void> deleteSoilTest(String id) {
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('soil_tests')
+        .doc(id)
+        .delete();
+  }
+
   // ─── CROP SCANS ────────────────────────────────────────────
 
   Stream<List<CropScanResult>> getCropScans() {
@@ -112,6 +121,20 @@ class FirestoreService {
         .doc(_uid)
         .collection('crop_scans')
         .add(result.toMap());
+  }
+
+  Future<void> deleteCropScan(String id, {String? imageUrl}) async {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      try {
+        await _storage.refFromURL(imageUrl).delete();
+      } catch (_) {}
+    }
+    return _db
+        .collection('users')
+        .doc(_uid)
+        .collection('crop_scans')
+        .doc(id)
+        .delete();
   }
 
   // ─── ALERTS ────────────────────────────────────────────────

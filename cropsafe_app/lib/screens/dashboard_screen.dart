@@ -52,6 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             HomeTab(
               onGoToSoil: () => setState(() => _currentIndex = 1),
               onGoToCrop: () => setState(() => _currentIndex = 2),
+              onGoToHistory: () => setState(() => _currentIndex = 3),
             ),
             const SoilTestTab(),
             const CropTab(),

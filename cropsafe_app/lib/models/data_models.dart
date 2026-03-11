@@ -2,6 +2,7 @@
 
 class HistoryItem {
   final int id;
+  final String firestoreId; // Firestore document ID for deletion
   final String type; // 'soil' or 'crop'
   final String title;
   final String date;
@@ -9,9 +10,11 @@ class HistoryItem {
   final String status;
   final String severity; // 'high', 'medium', 'low'
   final int score;
+  final DateTime createdAt;
 
   const HistoryItem({
     required this.id,
+    required this.firestoreId,
     required this.type,
     required this.title,
     required this.date,
@@ -19,6 +22,7 @@ class HistoryItem {
     required this.status,
     required this.severity,
     required this.score,
+    required this.createdAt,
   });
 }
 
@@ -41,8 +45,9 @@ class SoilNutrient {
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 final List<HistoryItem> historyItems = [
-  const HistoryItem(
+  HistoryItem(
     id: 1,
+    firestoreId: '',
     type: 'soil',
     title: 'Soil Test — Field A',
     date: 'Mar 8, 2026',
@@ -50,9 +55,11 @@ final List<HistoryItem> historyItems = [
     status: 'Nitrogen Deficiency',
     severity: 'medium',
     score: 62,
+    createdAt: DateTime(2026, 3, 8, 10, 24),
   ),
-  const HistoryItem(
+  HistoryItem(
     id: 2,
+    firestoreId: '',
     type: 'crop',
     title: 'Crop Scan — Wheat',
     date: 'Mar 7, 2026',
@@ -60,9 +67,11 @@ final List<HistoryItem> historyItems = [
     status: 'Leaf Rust Detected',
     severity: 'high',
     score: 38,
+    createdAt: DateTime(2026, 3, 7, 14, 10),
   ),
-  const HistoryItem(
+  HistoryItem(
     id: 3,
+    firestoreId: '',
     type: 'crop',
     title: 'Crop Scan — Rice',
     date: 'Mar 5, 2026',
@@ -70,9 +79,11 @@ final List<HistoryItem> historyItems = [
     status: 'Healthy Crop',
     severity: 'low',
     score: 91,
+    createdAt: DateTime(2026, 3, 5, 11, 5),
   ),
-  const HistoryItem(
+  HistoryItem(
     id: 4,
+    firestoreId: '',
     type: 'soil',
     title: 'Soil Test — Field B',
     date: 'Mar 3, 2026',
@@ -80,9 +91,11 @@ final List<HistoryItem> historyItems = [
     status: 'Low Phosphorus',
     severity: 'medium',
     score: 55,
+    createdAt: DateTime(2026, 3, 3, 9, 30),
   ),
-  const HistoryItem(
+  HistoryItem(
     id: 5,
+    firestoreId: '',
     type: 'crop',
     title: 'Crop Scan — Cotton',
     date: 'Feb 28, 2026',
@@ -90,6 +103,7 @@ final List<HistoryItem> historyItems = [
     status: 'Aphid Infestation',
     severity: 'high',
     score: 29,
+    createdAt: DateTime(2026, 2, 28, 16, 45),
   ),
 ];
 

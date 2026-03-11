@@ -39,6 +39,7 @@ class _HistoryTabState extends State<HistoryTab> {
       final severity = s.score >= 70 ? 'low' : (s.score >= 50 ? 'medium' : 'high');
       items.add(HistoryItem(
         id: id++,
+        firestoreId: s.id,
         type: 'soil',
         title: 'Soil Test',
         date: _formatDate(s.createdAt),
@@ -46,6 +47,7 @@ class _HistoryTabState extends State<HistoryTab> {
         status: s.label,
         severity: severity,
         score: s.score,
+        createdAt: s.createdAt,
       ));
     }
 
@@ -54,6 +56,7 @@ class _HistoryTabState extends State<HistoryTab> {
       final severity = score >= 80 ? 'low' : (score >= 50 ? 'medium' : 'high');
       items.add(HistoryItem(
         id: id++,
+        firestoreId: c.id,
         type: 'crop',
         title: 'Crop Scan',
         date: _formatDate(c.createdAt),
@@ -61,11 +64,12 @@ class _HistoryTabState extends State<HistoryTab> {
         status: c.disease == 'Healthy' ? 'Healthy Crop' : '${c.disease} Detected',
         severity: severity,
         score: score,
+        createdAt: c.createdAt,
       ));
     }
 
-    // Sort newest first
-    items.sort((a, b) => b.id.compareTo(a.id));
+    // Sort newest first by actual timestamp
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return items;
   }
 
@@ -91,6 +95,50 @@ class _HistoryTabState extends State<HistoryTab> {
     final m = dt.minute.toString().padLeft(2, '0');
     final ampm = dt.hour < 12 ? 'AM' : 'PM';
     return '$h:$m $ampm';
+  }
+
+  // ── Delete a history item from Firestore ─────────────────
+  Future<void> _deleteItem(HistoryItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Entry',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w700)),
+        content: Text(
+          'Delete this ${item.type == 'soil' ? 'soil test' : 'crop scan'} record? This cannot be undone.',
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: Color(0xFFDC2626),
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (item.type == 'soil') {
+      await _firestoreService.deleteSoilTest(item.firestoreId);
+    } else {
+      final cropScan = _cropScans
+          .where((c) => c.id == item.firestoreId)
+          .firstOrNull;
+      await _firestoreService.deleteCropScan(
+        item.firestoreId,
+        imageUrl: cropScan?.imageUrl,
+      );
+    }
   }
 
   List<HistoryItem> get _filtered {
@@ -249,7 +297,10 @@ class _HistoryTabState extends State<HistoryTab> {
                 // History cards
                 ..._filtered.map((item) => Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _HistoryCard(item: item),
+                      child: _HistoryCard(
+                        item: item,
+                        onDelete: () => _deleteItem(item),
+                      ),
                     )),
               ],
             ),
@@ -301,7 +352,8 @@ class _StatBox extends StatelessWidget {
 
 class _HistoryCard extends StatelessWidget {
   final HistoryItem item;
-  const _HistoryCard({required this.item});
+  final VoidCallback onDelete;
+  const _HistoryCard({required this.item, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -446,9 +498,15 @@ class _HistoryCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          const Icon(Icons.chevron_right,
-              size: 18, color: Color(0xFFD1D5DB)),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed: onDelete,
+            icon: const Icon(Icons.delete_outline,
+                size: 20, color: Color(0xFFDC2626)),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            splashRadius: 20,
+          ),
         ],
       ),
     );

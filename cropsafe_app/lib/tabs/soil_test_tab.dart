@@ -3,7 +3,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/app_models.dart';
 import '../services/api_service.dart';
+import '../services/firestore_service.dart';
 import '../services/ocr_service.dart';
 import '../widgets/soil_result_sheet.dart';
 import '../widgets/shared_widgets.dart';
@@ -22,6 +24,8 @@ class _SoilTestTabState extends State<SoilTestTab> {
   String? _successMessage;
   String? _selectedField;
   File? _scannedImage;
+
+  final _firestoreService = FirestoreService();
 
   final _phCtrl = TextEditingController();
   final _nitrogenCtrl = TextEditingController();
@@ -166,6 +170,32 @@ class _SoilTestTabState extends State<SoilTestTab> {
       // Show result immediately — Firebase save runs in background
       setState(() => _isLoading = false);
       _showResult(result);
+
+      // Save to Firestore in background
+      Future(() async {
+        _firestoreService.addSoilTest(
+          SoilTestResult(
+            id: '',
+            fieldId: '',
+            score: result.score,
+            label: result.label,
+            breakdown: {
+              for (final item in result.breakdown)
+                item.parameter: {
+                  'value': item.value,
+                  'unit': item.unit,
+                  'status': item.status,
+                  'ideal': item.ideal,
+                  'score': item.score,
+                },
+            },
+            recommendations: result.recommendations
+                .map((r) => {'title': r.title, 'detail': r.detail})
+                .toList(),
+            createdAt: DateTime.now(),
+          ),
+        );
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {

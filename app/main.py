@@ -2,6 +2,7 @@
 
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.routes.crop_routes import router as crop_router
 from app.routes.soil_routes import router as soil_router
@@ -38,6 +39,12 @@ app = FastAPI(
 )
 
 # ── Register Routers ───────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(crop_router, prefix="/crop", tags=["Crop Analysis"])
 app.include_router(soil_router, prefix="/soil", tags=["Soil Analysis"])
 

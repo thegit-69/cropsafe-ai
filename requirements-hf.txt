@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+python-multipart
+pillow
+opencv-python-headless
+numpy
+pandas
+scikit-learn
+joblib
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision

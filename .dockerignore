@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+.git
+.gitignore
+cropsafe_app/
+datasets/
+*.md
+.env
+train_*.py
+hello.py
+.vscode/

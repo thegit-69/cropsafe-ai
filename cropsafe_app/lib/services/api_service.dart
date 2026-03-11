@@ -6,8 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  // !! UPDATE THIS to your current ngrok HTTPS URL every session !!
-  // e.g. 'https://abcd-12-34-56-78.ngrok-free.app'
   static const String baseUrl = 'https://kalki777-cropsafe-ai.hf.space';
 
   // ── Crop Disease Analysis ──────────────────────────────────

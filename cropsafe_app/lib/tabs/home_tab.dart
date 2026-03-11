@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/app_models.dart';
 import '../screens/login_screen.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -8,11 +9,13 @@ import '../services/weather_service.dart';
 class HomeTab extends StatefulWidget {
   final VoidCallback onGoToSoil;
   final VoidCallback onGoToCrop;
+  final VoidCallback onGoToHistory;
 
   const HomeTab({
     super.key,
     required this.onGoToSoil,
     required this.onGoToCrop,
+    required this.onGoToHistory,
   });
 
   @override
@@ -29,12 +32,27 @@ class _HomeTabState extends State<HomeTab> {
   WeatherData? _weather;
   bool _weatherLoading = true;
 
+  List<FieldModel> _fields = [];
+
   @override
   void initState() {
     super.initState();
     _loadStats();
     _loadWeather();
+    _firestoreService.getFields().listen((data) {
+      if (mounted) setState(() => _fields = data);
+    });
   }
+
+  String _scoreLabel(double score) {
+    final s = score > 1 ? score : score * 100;
+    if (s >= 80) return 'Healthy';
+    if (s >= 50) return 'Moderate';
+    return 'At Risk';
+  }
+
+  int _toInt(double score) =>
+      score > 1 ? score.round() : (score * 100).round();
 
   Future<void> _loadWeather() async {
     try {
@@ -325,33 +343,54 @@ class _HomeTabState extends State<HomeTab> {
                                     color: Color(0xFF374151)),
                               ),
                             ),
-                            Text(
-                              'Manage',
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: const Color(0xFF15803D)),
+                            GestureDetector(
+                              onTap: widget.onGoToHistory,
+                              child: const Text(
+                                'View All',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF15803D)),
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        _FieldRow(
-                          name: 'Field A',
-                          crop: 'Wheat · 5 acres',
-                          soilScore: 62,
-                          cropScore: 38,
-                          soilLabel: 'Moderate',
-                          cropLabel: 'At Risk',
-                        ),
-                        const Divider(height: 20, color: Color(0xFFF3F4F6)),
-                        _FieldRow(
-                          name: 'Field B',
-                          crop: 'Rice · 3.5 acres',
-                          soilScore: 88,
-                          cropScore: 91,
-                          soilLabel: 'Healthy',
-                          cropLabel: 'Healthy',
-                        ),
+                        if (_fields.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: Text(
+                                'No fields added yet.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF9CA3AF)),
+                              ),
+                            ),
+                          )
+                        else
+                          ...() {
+                            final display = _fields.take(2).toList();
+                            final rows = <Widget>[];
+                            for (var i = 0; i < display.length; i++) {
+                              final f = display[i];
+                              rows.add(_FieldRow(
+                                name: f.name,
+                                crop: '${f.crop} · ${f.acres} acres',
+                                soilScore: _toInt(f.soilScore),
+                                cropScore: _toInt(f.cropScore),
+                                soilLabel: _scoreLabel(f.soilScore),
+                                cropLabel: _scoreLabel(f.cropScore),
+                                onTap: widget.onGoToHistory,
+                              ));
+                              if (i < display.length - 1) {
+                                rows.add(const Divider(
+                                    height: 20,
+                                    color: Color(0xFFF3F4F6)));
+                              }
+                            }
+                            return rows;
+                          }(),
                       ],
                     ),
                   ),
@@ -549,6 +588,7 @@ class _FieldRow extends StatelessWidget {
   final int cropScore;
   final String soilLabel;
   final String cropLabel;
+  final VoidCallback? onTap;
 
   const _FieldRow({
     required this.name,
@@ -557,11 +597,15 @@ class _FieldRow extends StatelessWidget {
     required this.cropScore,
     required this.soilLabel,
     required this.cropLabel,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
       children: [
         Row(
           children: [
@@ -611,6 +655,7 @@ class _FieldRow extends StatelessWidget {
           ],
         ),
       ],
+      ),
     );
   }
 }
